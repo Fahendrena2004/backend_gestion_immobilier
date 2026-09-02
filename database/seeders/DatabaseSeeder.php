@@ -15,7 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(ReferenceDataSeeder::class);
+
+        User::factory()->create([
+            'name' => 'Admin B-TECH',
+            'email' => 'admin@btech.test',
+            'role' => 'admin',
+        ]);
 
         User::factory()->create([
             'name' => 'Test User',

@@ -4,8 +4,9 @@ namespace App\Shared\Enums;
 
 enum VisiteStatus: string
 {
-    case EN_ATTENTE = 'en_attente';
+    case DEMANDEE = 'demandee';
+    case PROPOSEE = 'proposee';
     case CONFIRMEE = 'confirmee';
-    case EFFECTUEE = 'effectuee';
     case ANNULEE = 'annulee';
+    case REALISEE = 'realisee';
 }
