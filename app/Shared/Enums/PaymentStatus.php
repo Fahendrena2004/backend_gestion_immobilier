@@ -4,7 +4,7 @@ namespace App\Shared\Enums;
 
 enum PaymentStatus: string
 {
-    case DECLARE = 'declare';
+    case EN_ATTENTE = 'en_attente';
     case VALIDE = 'valide';
     case REJETE = 'rejete';
 }
