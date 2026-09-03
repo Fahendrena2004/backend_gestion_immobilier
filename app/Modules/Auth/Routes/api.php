@@ -1,19 +1,14 @@
 <?php
 
+use App\Modules\Auth\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
-// Auth Routes (Login, Register, Logout, Refresh)
-Route::post('/register', function () {
-    return response()->json(['message' => 'Register endpoint']);
-});
-Route::post('/login', function () {
-    return response()->json(['message' => 'Login endpoint']);
-});
+// Auth Routes — publiques
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Auth Routes — authentifiées
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', function () {
-        return response()->json(['message' => 'Logout endpoint']);
-    });
-    Route::get('/me', function () {
-        return response()->json(['user' => request()->user()]);
-    });
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 });
