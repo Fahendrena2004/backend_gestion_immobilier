@@ -1,16 +1,15 @@
 <?php
 
+use App\Modules\Locations\Http\Controllers\ContratController;
+use App\Modules\Locations\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
-// Locations Routes (Fifanarahana / Contrats de bail)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/', function () {
-        return response()->json(['message' => 'List locations']);
+    Route::get('/', [LocationController::class, 'index']);
+
+    Route::middleware('role:proprietaire')->group(function () {
+        Route::post('/', [LocationController::class, 'store']);
     });
-    Route::post('/', function () {
-        return response()->json(['message' => 'Create contrat de location']);
-    });
-    Route::get('/{id}/contrat-pdf', function ($id) {
-        return response()->json(['message' => "Generate / Download contrat PDF: $id"]);
-    });
+
+    Route::get('/{id}/contrat-pdf', [ContratController::class, 'generatePdf']);
 });

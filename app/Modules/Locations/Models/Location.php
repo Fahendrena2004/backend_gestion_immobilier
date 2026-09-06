@@ -2,6 +2,7 @@
 
 namespace App\Modules\Locations\Models;
 
+use App\Modules\Demandes\Models\DemandeLocation;
 use App\Modules\Finances\Models\Facture;
 use App\Modules\Logements\Models\Logement;
 use App\Models\User;
@@ -21,6 +22,7 @@ class Location extends Model
     protected $fillable = [
         'locataire_id',
         'logement_id',
+        'demande_id',
         'date_debut',
         'date_fin',
         'statut',
@@ -43,6 +45,11 @@ class Location extends Model
     public function logement(): BelongsTo
     {
         return $this->belongsTo(Logement::class);
+    }
+
+    public function demande(): BelongsTo
+    {
+        return $this->belongsTo(DemandeLocation::class);
     }
 
     public function contrat(): HasOne
