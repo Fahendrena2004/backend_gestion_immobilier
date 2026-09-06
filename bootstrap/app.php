@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Shared\Middleware\RoleMiddleware::class,
             'logement.owner' => \App\Shared\Middleware\LogementOwnerMiddleware::class,
         ]);
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                abort(401, 'Unauthenticated.');
+            }
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
