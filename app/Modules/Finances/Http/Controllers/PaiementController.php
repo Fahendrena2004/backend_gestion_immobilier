@@ -21,6 +21,31 @@ class PaiementController
 {
     use ApiResponseTrait;
 
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = Paiement::with(['facture.location.logement', 'facture.location.locataire', 'modePaiement', 'quittance']);
+
+        if ($user->isLocataire()) {
+            $query->whereHas('facture.location', fn ($q) => $q->where('locataire_id', $user->id));
+        } elseif ($user->isProprietaire()) {
+            $query->whereHas('facture.location.logement', fn ($q) => $q->where('proprietaire_id', $user->id));
+        }
+
+        if ($request->filled('statut') && $statut = PaymentStatus::tryFrom($request->statut)) {
+            $query->where('statut', $statut);
+        }
+
+        if ($request->filled('location_id')) {
+            $query->whereHas('facture', fn ($q) => $q->where('location_id', $request->location_id));
+        }
+
+        $paiements = $query->orderByDesc('created_at')->paginate(15);
+
+        return $this->successResponse($paiements);
+    }
+
     public function store(StorePaiementRequest $request, FileUploadService $uploadService): JsonResponse
     {
         $user = $request->user();

@@ -15,6 +15,19 @@ class ModerationController
 {
     use ApiResponseTrait;
 
+    public function annonces(Request $request): JsonResponse
+    {
+        $query = Logement::with(['quartier', 'typeLogement', 'proprietaire', 'photos']);
+
+        if ($request->filled('statut_moderation')) {
+            $query->where('statut_moderation', $request->statut_moderation);
+        }
+
+        $logements = $query->orderByDesc('created_at')->paginate(15);
+
+        return $this->successResponse($logements);
+    }
+
     public function moderateLogement(ModerateLogementRequest $request, int $id): JsonResponse
     {
         $logement = Logement::findOrFail($id);
