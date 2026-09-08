@@ -26,7 +26,7 @@ class LocationController
 
         if ($user->isLocataire()) {
             $locations = Location::where('locataire_id', $user->id)
-                ->with(['logement', 'contrat'])
+                ->with(['logement.quartier', 'contrat'])
                 ->orderByDesc('created_at')
                 ->paginate(15);
 
@@ -37,7 +37,7 @@ class LocationController
             $locations = Location::whereHas('logement', function ($query) use ($user) {
                 $query->where('proprietaire_id', $user->id);
             })
-                ->with(['logement', 'contrat'])
+                ->with(['logement.quartier', 'contrat'])
                 ->orderByDesc('created_at')
                 ->paginate(15);
 
@@ -99,7 +99,7 @@ class LocationController
             return $location;
         });
 
-        $location->load(['logement', 'contrat']);
+        $location->load(['logement.quartier', 'contrat']);
 
         return $this->successResponse($location, 'Contrat de location créé avec succès', 201);
     }

@@ -9,12 +9,13 @@ use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ContratController
 {
     use ApiResponseTrait;
 
-    public function generatePdf(Request $request, int $id, DomPdf $pdf, PdfGeneratorService $service): JsonResponse|Response
+    public function generatePdf(Request $request, int $id, DomPdf $pdf, PdfGeneratorService $service): JsonResponse|Response|BinaryFileResponse
     {
         $contrat = Contrat::with('location.logement.proprietaire', 'location.locataire')->findOrFail($id);
 

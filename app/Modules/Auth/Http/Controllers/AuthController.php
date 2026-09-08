@@ -47,6 +47,16 @@ class AuthController
 
         /** @var User $user */
         $user = Auth::user();
+
+        if (!$user->is_active) {
+            Auth::logout();
+
+            return $this->errorResponse(
+                'Votre compte a été désactivé. Veuillez contacter l\'administration.',
+                403
+            );
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return $this->successResponse([
