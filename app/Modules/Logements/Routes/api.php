@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 // --- Routes publiques ---
 Route::get('/', [LogementController::class, 'index']);
 Route::get('/quartiers', [LogementController::class, 'quartiers']);
+Route::get('/types', [LogementController::class, 'types']);
 
 // --- Routes propriétaire ---
 Route::middleware(['auth:sanctum', 'role:proprietaire'])->group(function () {
