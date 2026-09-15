@@ -4,9 +4,11 @@ namespace App\Modules\Users\Http\Controllers;
 
 use App\Models\User;
 use App\Modules\Users\Http\Requests\UpdateProfileRequest;
+use App\Modules\Users\Http\Requests\UpdatePasswordRequest;
 use App\Shared\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserController
 {
@@ -70,6 +72,24 @@ class UserController
         return $this->successResponse(
             $user->fresh(),
             'Profil mis à jour avec succès'
+        );
+    }
+
+    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return $this->errorResponse('Mot de passe actuel incorrect', 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return $this->successResponse(
+            null,
+            'Mot de passe modifié avec succès'
         );
     }
 }
