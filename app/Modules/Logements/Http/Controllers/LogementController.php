@@ -7,6 +7,7 @@ use App\Modules\Logements\Http\Requests\UpdateLogementRequest;
 use App\Modules\Logements\Models\Logement;
 use App\Modules\Logements\Models\Quartier;
 use App\Modules\Logements\Models\TypeLogement;
+use App\Modules\Logements\Models\Equipement;
 use App\Modules\Logements\Resources\LogementListResource;
 use App\Modules\Logements\Resources\LogementResource;
 use App\Shared\Enums\ModerationStatus;
@@ -59,6 +60,13 @@ class LogementController
         $types = TypeLogement::orderBy('libelle')->get();
 
         return $this->successResponse($types);
+    }
+
+    public function equipements(): JsonResponse
+    {
+        $equipements = Equipement::orderBy('libelle')->get();
+
+        return $this->successResponse($equipements);
     }
 
     public function show(Request $request, Logement $logement): LogementResource|JsonResponse
