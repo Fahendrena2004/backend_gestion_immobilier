@@ -7,7 +7,6 @@ use App\Modules\Logements\Http\Requests\UpdateLogementRequest;
 use App\Modules\Logements\Models\Logement;
 use App\Modules\Logements\Models\Quartier;
 use App\Modules\Logements\Models\TypeLogement;
-use App\Modules\Logements\Models\Equipement;
 use App\Modules\Logements\Resources\LogementListResource;
 use App\Modules\Logements\Resources\LogementResource;
 use App\Shared\Enums\ModerationStatus;
@@ -21,33 +20,50 @@ class LogementController
 {
     use ApiResponseTrait;
 
+    /**
+     * Liste des logements disponibles et approuvés.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Logement::with(['quartier', 'typeLogement', 'photos', 'equipements'])
+        $query = Logement::with([
+            'quartier',
+            'typeLogement',
+            'photos',
+            'equipements',
+        ])
             ->where('statut_moderation', ModerationStatus::APPROUVE)
             ->where('statut', LogementStatus::DISPONIBLE);
 
         if ($request->filled('quartier_id')) {
             $query->where('quartier_id', $request->quartier_id);
         }
+
         if ($request->filled('type_logement_id')) {
             $query->where('type_logement_id', $request->type_logement_id);
         }
+
         if ($request->filled('loyer_min')) {
             $query->where('loyer', '>=', $request->loyer_min);
         }
+
         if ($request->filled('loyer_max')) {
             $query->where('loyer', '<=', $request->loyer_max);
         }
+
         if ($request->filled('nombre_pieces')) {
             $query->where('nombre_pieces', $request->nombre_pieces);
         }
 
-        $logements = $query->orderByDesc('created_at')->paginate(15);
+        $logements = $query
+            ->orderByDesc('created_at')
+            ->paginate(15);
 
         return LogementListResource::collection($logements);
     }
 
+    /**
+     * Liste des quartiers.
+     */
     public function quartiers(): JsonResponse
     {
         $quartiers = Quartier::orderBy('nom')->get();
@@ -55,41 +71,57 @@ class LogementController
         return $this->successResponse($quartiers);
     }
 
+    /**
+     * Liste des types de logements.
+     */
     public function types(): JsonResponse
     {
-        $types = TypeLogement::orderBy('libelle')->get();
+        $typesLogement = TypeLogement::orderBy('libelle')->get();
 
-        return $this->successResponse($types);
+        return $this->successResponse($typesLogement);
     }
 
-    public function equipements(): JsonResponse
-    {
-        $equipements = Equipement::orderBy('libelle')->get();
-
-        return $this->successResponse($equipements);
-    }
-
-    public function show(Request $request, Logement $logement): LogementResource|JsonResponse
-    {
+    /**
+     * Afficher un logement.
+     */
+    public function show(
+        Request $request,
+        Logement $logement
+    ): LogementResource|JsonResponse {
         if ($logement->statut_moderation !== ModerationStatus::APPROUVE) {
             $user = $request->user('sanctum');
+
             $isOwner = $user && $logement->proprietaire_id === $user->id;
             $isAdmin = $user && $user->isAdmin();
 
             if (!$isOwner && !$isAdmin) {
-                return $this->errorResponse('Ressource introuvable', 404);
+                return $this->errorResponse(
+                    'Ressource introuvable',
+                    404
+                );
             }
         }
 
-        $logement->load(['quartier', 'typeLogement', 'photos', 'equipements', 'proprietaire']);
+        $logement->load([
+            'quartier',
+            'typeLogement',
+            'photos',
+            'equipements',
+            'proprietaire',
+        ]);
 
         return new LogementResource($logement);
     }
 
+    /**
+     * Créer un logement.
+     */
     public function store(StoreLogementRequest $request): JsonResponse
     {
         $validated = $request->validated();
+
         $equipements = $validated['equipements'] ?? [];
+
         unset($validated['equipements']);
 
         $logement = $request->user()->logements()->create([
@@ -102,7 +134,11 @@ class LogementController
             $logement->equipements()->sync($equipements);
         }
 
-        $logement->load(['quartier', 'typeLogement', 'equipements']);
+        $logement->load([
+            'quartier',
+            'typeLogement',
+            'equipements',
+        ]);
 
         return $this->successResponse(
             new LogementResource($logement),
@@ -111,14 +147,24 @@ class LogementController
         );
     }
 
-    public function update(UpdateLogementRequest $request, Logement $logement): JsonResponse
-    {
+    /**
+     * Modifier un logement.
+     */
+    public function update(
+        UpdateLogementRequest $request,
+        Logement $logement
+    ): JsonResponse {
         if ($logement->proprietaire_id !== $request->user()->id) {
-            return $this->errorResponse('Vous ne pouvez modifier que vos propres logements', 403);
+            return $this->errorResponse(
+                'Vous ne pouvez modifier que vos propres logements',
+                403
+            );
         }
 
         $validated = $request->validated();
+
         $equipements = $validated['equipements'] ?? null;
+
         unset($validated['equipements']);
 
         $logement->update($validated);
@@ -127,7 +173,12 @@ class LogementController
             $logement->equipements()->sync($equipements);
         }
 
-        $logement->load(['quartier', 'typeLogement', 'photos', 'equipements']);
+        $logement->load([
+            'quartier',
+            'typeLogement',
+            'photos',
+            'equipements',
+        ]);
 
         return $this->successResponse(
             new LogementResource($logement),
@@ -135,22 +186,42 @@ class LogementController
         );
     }
 
-    public function destroy(Request $request, Logement $logement): JsonResponse
-    {
+    /**
+     * Supprimer un logement.
+     */
+    public function destroy(
+        Request $request,
+        Logement $logement
+    ): JsonResponse {
         if ($logement->proprietaire_id !== $request->user()->id) {
-            return $this->errorResponse('Vous ne pouvez supprimer que vos propres logements', 403);
+            return $this->errorResponse(
+                'Vous ne pouvez supprimer que vos propres logements',
+                403
+            );
         }
 
         $logement->equipements()->detach();
         $logement->delete();
 
-        return $this->successResponse(null, 'Logement supprimé avec succès');
+        return $this->successResponse(
+            null,
+            'Logement supprimé avec succès'
+        );
     }
 
-    public function mesAnnonces(Request $request): AnonymousResourceCollection
-    {
-        $logements = $request->user()->logements()
-            ->with(['quartier', 'typeLogement', 'photos'])
+    /**
+     * Liste des annonces du propriétaire connecté.
+     */
+    public function mesAnnonces(
+        Request $request
+    ): AnonymousResourceCollection {
+        $logements = $request->user()
+            ->logements()
+            ->with([
+                'quartier',
+                'typeLogement',
+                'photos',
+            ])
             ->orderByDesc('created_at')
             ->paginate(15);
 

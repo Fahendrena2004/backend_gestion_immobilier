@@ -2,6 +2,7 @@
 
 namespace App\Modules\Logements\Http\Controllers;
 
+use App\Modules\Logements\Models\Equipement;
 use App\Modules\Logements\Models\Logement;
 use App\Shared\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,13 @@ use Illuminate\Http\Request;
 class EquipementController
 {
     use ApiResponseTrait;
+
+    public function index(): JsonResponse
+    {
+        $equipements = Equipement::orderBy('libelle')->get();
+
+        return $this->successResponse($equipements);
+    }
 
     public function sync(Request $request, Logement $logement): JsonResponse
     {
