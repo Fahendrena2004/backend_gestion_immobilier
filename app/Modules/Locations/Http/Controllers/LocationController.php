@@ -7,7 +7,9 @@ use App\Modules\Locations\Models\Contrat;
 use App\Modules\Locations\Models\Location;
 use App\Modules\Demandes\Models\DemandeLocation;
 use App\Modules\Logements\Models\Logement;
+use App\Modules\Finances\Models\Facture;
 use App\Shared\Enums\DemandeStatus;
+use App\Shared\Enums\FactureStatus;
 use App\Shared\Enums\LocationStatus;
 use App\Shared\Enums\LogementStatus;
 use App\Shared\Traits\ApiResponseTrait;
@@ -15,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class LocationController
 {
@@ -87,7 +90,7 @@ class LocationController
 
             $demande->logement->update(['statut' => LogementStatus::LOUE]);
 
-            Contrat::create([
+            $contrat = Contrat::create([
                 'location_id'     => $location->id,
                 'date_signature'  => now()->toDateString(),
                 'date_debut'      => $request->date_debut,
@@ -96,11 +99,80 @@ class LocationController
                 'conditions'      => $request->conditions,
             ]);
 
+            // Générer la première facture pour le premier mois de location
+            $this->createFirstFacture($location, $contrat, $request->date_debut);
+
             return $location;
         });
 
         $location->load(['logement.quartier', 'contrat']);
 
         return $this->successResponse($location, 'Contrat de location créé avec succès', 201);
+    }
+
+    /**
+     * Crée la première facture pour le premier mois de location.
+     *
+     * @param Location $location
+     * @param Contrat $contrat
+     * @param string $dateDebut
+     * @return Facture
+     */
+    private function createFirstFacture(Location $location, Contrat $contrat, string $dateDebut): Facture
+    {
+        $dateDebut = Carbon::parse($dateDebut);
+
+        // Générer le numéro de facture : FAC-YYYY-NNNN
+        $year = now()->year;
+        $prefix = "FAC-{$year}-";
+
+        $maxSequence = Facture::where('numero_facture', 'like', "{$prefix}%")
+            ->lockForUpdate()
+            ->max(DB::raw("CAST(SUBSTRING(numero_facture, " . (strlen($prefix) + 1) . ") AS UNSIGNED)"));
+
+        $sequence = ($maxSequence ?? 0) + 1;
+        $numeroFacture = sprintf('FAC-%s-%04d', $year, $sequence);
+
+        // Calculer la période : mois de la date de début (ex: "Octobre 2026")
+        $periode = $dateDebut->translatedFormat('F Y');
+
+        // Date d'émission : aujourd'hui
+        $dateEmission = now()->toDateString();
+
+        // Date d'échéance : 10 jours après la date de début, ou le 5 du mois suivant si plus tard
+        $dateEcheance = $dateDebut->copy()->addDays(10);
+        $premierDuMoisSuivant = $dateDebut->copy()->addMonth()->day(5);
+        if ($premierDuMoisSuivant->gt($dateEcheance)) {
+            $dateEcheance = $premierDuMoisSuivant;
+        }
+
+        // Montant = loyer mensuel du contrat
+        $montant = $contrat->montant_loyer;
+
+        // Calculer la période : mois de la date de début (ex: "Octobre 2026")
+        $periode = $dateDebut->translatedFormat('F Y');
+
+        // Date d'émission : aujourd'hui
+        $dateEmission = now()->toDateString();
+
+        // Date d'échéance : 10 jours après la date de début, ou le 5 du mois suivant si plus tard
+        $dateEcheance = $dateDebut->copy()->addDays(10);
+        $premierDuMoisSuivant = $dateDebut->copy()->addMonth()->day(5);
+        if ($premierDuMoisSuivant->gt($dateEcheance)) {
+            $dateEcheance = $premierDuMoisSuivant;
+        }
+
+        // Montant = loyer mensuel du contrat
+        $montant = $contrat->montant_loyer;
+
+        return Facture::create([
+            'location_id'   => $location->id,
+            'numero_facture' => $numeroFacture,
+            'date_emission' => $dateEmission,
+            'date_echeance' => $dateEcheance->toDateString(),
+            'montant'       => $montant,
+            'periode'       => $periode,
+            'statut'        => FactureStatus::IMPAYEE,
+        ]);
     }
 }

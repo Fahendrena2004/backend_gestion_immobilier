@@ -25,7 +25,7 @@ class DemandeLocationController
 
         if ($user->isLocataire()) {
             $demandes = DemandeLocation::where('locataire_id', $user->id)
-                ->with('logement')
+                ->with(['logement', 'locataire'])
                 ->orderByDesc('created_at')
                 ->paginate(15);
 
@@ -36,7 +36,7 @@ class DemandeLocationController
             $demandes = DemandeLocation::whereHas('logement', function ($query) use ($user) {
                 $query->where('proprietaire_id', $user->id);
             })
-                ->with('logement')
+                ->with(['logement', 'locataire'])
                 ->orderByDesc('created_at')
                 ->paginate(15);
 
