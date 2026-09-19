@@ -77,7 +77,16 @@ class DemandeLocationController
             'statut'       => DemandeStatus::EN_ATTENTE,
         ]);
 
-        $demande->load('logement');
+        // Le propriétaire est prévenu qu'une demande l'attend.
+        Notification::create([
+            'user_id' => $logement->proprietaire_id,
+            'titre'   => 'Nouvelle demande de location',
+            'contenu' => "{$request->user()->name} a envoyé une demande de location pour «{$logement->titre}».",
+            'type'    => 'demande_recue',
+            'lu'      => false,
+        ]);
+
+        $demande->load(['logement', 'locataire']);
 
         return $this->successResponse($demande, 'Demande créée avec succès', 201);
     }
@@ -119,11 +128,22 @@ class DemandeLocationController
                 'user_id' => $demande->locataire_id,
                 'titre'   => 'Votre demande a été acceptée',
                 'contenu' => "Votre demande pour le logement «{$demande->logement->titre}» a été acceptée par le propriétaire.",
+                'type'    => 'demande_acceptee',
                 'lu'      => false,
             ]);
         }
 
-        $demande->load('logement');
+        if ($nouveauStatut === DemandeStatus::REFUSEE) {
+            Notification::create([
+                'user_id' => $demande->locataire_id,
+                'titre'   => 'Votre demande a été refusée',
+                'contenu' => "Votre demande pour le logement «{$demande->logement->titre}» n'a pas été retenue par le propriétaire.",
+                'type'    => 'demande_refusee',
+                'lu'      => false,
+            ]);
+        }
+
+        $demande->load(['logement', 'locataire']);
 
         return $this->successResponse($demande, 'Statut mis à jour avec succès');
     }

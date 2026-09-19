@@ -50,15 +50,51 @@ class LogementController
             $query->where('loyer', '<=', $request->loyer_max);
         }
 
+        // `nombre_pieces` = nombre exact, `pieces_min` = au moins N pièces.
         if ($request->filled('nombre_pieces')) {
             $query->where('nombre_pieces', $request->nombre_pieces);
         }
 
+        if ($request->filled('pieces_min')) {
+            $query->where('nombre_pieces', '>=', $request->pieces_min);
+        }
+
+        // Recherche plein texte simple sur le titre, la description, l'adresse
+        // et le nom du quartier.
+        if ($request->filled('q')) {
+            $terme = '%' . $request->q . '%';
+
+            $query->where(function ($sousRequete) use ($terme) {
+                $sousRequete->where('titre', 'like', $terme)
+                    ->orWhere('description', 'like', $terme)
+                    ->orWhere('adresse', 'like', $terme)
+                    ->orWhereHas('quartier', fn ($q) => $q->where('nom', 'like', $terme))
+                    ->orWhereHas('typeLogement', fn ($q) => $q->where('libelle', 'like', $terme));
+            });
+        }
+
+        // Le logement doit posséder TOUS les équipements demandés.
+        $equipements = array_filter((array) $request->input('equipements', []));
+
+        foreach ($equipements as $equipementId) {
+            $query->whereHas('equipements', fn ($q) => $q->where('equipements.id', $equipementId));
+        }
+
         $logements = $query
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return LogementListResource::collection($logements);
+    }
+
+    /**
+     * Taille de page demandée, bornée pour éviter les requêtes trop lourdes.
+     */
+    private function perPage(Request $request, int $defaut = 15): int
+    {
+        $perPage = (int) $request->input('per_page', $defaut);
+
+        return max(1, min($perPage, 100));
     }
 
     /**
@@ -215,15 +251,26 @@ class LogementController
     public function mesAnnonces(
         Request $request
     ): AnonymousResourceCollection {
-        $logements = $request->user()
+        $query = $request->user()
             ->logements()
             ->with([
                 'quartier',
                 'typeLogement',
                 'photos',
-            ])
+                'equipements',
+            ]);
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('statut_moderation')) {
+            $query->where('statut_moderation', $request->statut_moderation);
+        }
+
+        $logements = $query
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->paginate($this->perPage($request, 50));
 
         return LogementListResource::collection($logements);
     }

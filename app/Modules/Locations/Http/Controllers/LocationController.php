@@ -6,8 +6,8 @@ use App\Modules\Locations\Http\Requests\StoreLocationRequest;
 use App\Modules\Locations\Models\Contrat;
 use App\Modules\Locations\Models\Location;
 use App\Modules\Demandes\Models\DemandeLocation;
-use App\Modules\Logements\Models\Logement;
 use App\Modules\Finances\Models\Facture;
+use App\Modules\Notifications\Models\Notification;
 use App\Shared\Enums\DemandeStatus;
 use App\Shared\Enums\FactureStatus;
 use App\Shared\Enums\LocationStatus;
@@ -100,7 +100,18 @@ class LocationController
             ]);
 
             // Générer la première facture pour le premier mois de location
-            $this->createFirstFacture($location, $contrat, $request->date_debut);
+            $facture = $this->createFirstFacture($location, $contrat, $request->date_debut);
+
+            Notification::create([
+                'user_id' => $location->locataire_id,
+                'titre'   => 'Votre contrat de location est disponible',
+                'contenu' => "Votre location du logement «{$demande->logement->titre}» démarre le "
+                    . $location->date_debut->format('d/m/Y')
+                    . ". La facture {$facture->numero_facture} est à régler avant le "
+                    . $facture->date_echeance->format('d/m/Y') . '.',
+                'type'    => 'contrat_cree',
+                'lu'      => false,
+            ]);
 
             return $location;
         });
@@ -133,36 +144,20 @@ class LocationController
         $sequence = ($maxSequence ?? 0) + 1;
         $numeroFacture = sprintf('FAC-%s-%04d', $year, $sequence);
 
-        // Calculer la période : mois de la date de début (ex: "Octobre 2026")
+        // Période : mois de la date de début (ex : « Octobre 2026 »)
         $periode = $dateDebut->translatedFormat('F Y');
 
-        // Date d'émission : aujourd'hui
         $dateEmission = now()->toDateString();
 
-        // Date d'échéance : 10 jours après la date de début, ou le 5 du mois suivant si plus tard
+        // Échéance : 10 jours après la date de début, ou le 5 du mois suivant
+        // si cette date est plus tardive.
         $dateEcheance = $dateDebut->copy()->addDays(10);
-        $premierDuMoisSuivant = $dateDebut->copy()->addMonth()->day(5);
-        if ($premierDuMoisSuivant->gt($dateEcheance)) {
-            $dateEcheance = $premierDuMoisSuivant;
+        $cinqDuMoisSuivant = $dateDebut->copy()->addMonth()->day(5);
+
+        if ($cinqDuMoisSuivant->gt($dateEcheance)) {
+            $dateEcheance = $cinqDuMoisSuivant;
         }
 
-        // Montant = loyer mensuel du contrat
-        $montant = $contrat->montant_loyer;
-
-        // Calculer la période : mois de la date de début (ex: "Octobre 2026")
-        $periode = $dateDebut->translatedFormat('F Y');
-
-        // Date d'émission : aujourd'hui
-        $dateEmission = now()->toDateString();
-
-        // Date d'échéance : 10 jours après la date de début, ou le 5 du mois suivant si plus tard
-        $dateEcheance = $dateDebut->copy()->addDays(10);
-        $premierDuMoisSuivant = $dateDebut->copy()->addMonth()->day(5);
-        if ($premierDuMoisSuivant->gt($dateEcheance)) {
-            $dateEcheance = $premierDuMoisSuivant;
-        }
-
-        // Montant = loyer mensuel du contrat
         $montant = $contrat->montant_loyer;
 
         return Facture::create([
