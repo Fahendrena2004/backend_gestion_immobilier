@@ -165,11 +165,13 @@ class PaiementController
         $year = date('Y');
         $prefix = "QT-{$year}-";
 
+        // `value()` ne sait pas lire une expression brute : on passe par max()
+        // sinon la séquence repart toujours de 1 et viole l'unicité du numéro.
         $max = Quittance::where('numero_quittance', 'like', "{$prefix}%")
             ->lockForUpdate()
-            ->value(DB::raw("CAST(SUBSTRING(numero_quittance, " . (strlen($prefix) + 1) . ") AS UNSIGNED)"));
+            ->max(DB::raw('CAST(SUBSTRING(numero_quittance, ' . (strlen($prefix) + 1) . ') AS UNSIGNED)'));
 
-        $sequence = ($max ?? 0) + 1;
+        $sequence = ((int) $max) + 1;
 
         return sprintf('QT-%s-%06d', $year, $sequence);
     }
