@@ -6,27 +6,74 @@ use App\Modules\Logements\Http\Controllers\PhotoController;
 use Illuminate\Support\Facades\Route;
 
 // --- Routes publiques ---
+
 Route::get('/', [LogementController::class, 'index']);
+
 Route::get('/quartiers', [LogementController::class, 'quartiers']);
+
 Route::get('/types', [LogementController::class, 'types']);
+
 Route::get('/equipements', [EquipementController::class, 'index']);
 
+
 // --- Routes propriétaire ---
-Route::middleware(['auth:sanctum', 'role:proprietaire'])->group(function () {
-    Route::get('/mes-annonces', [LogementController::class, 'mesAnnonces']);
-    Route::post('/', [LogementController::class, 'store']);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:proprietaire',
+])->group(function () {
+
+    Route::get(
+        '/mes-annonces',
+        [LogementController::class, 'mesAnnonces']
+    );
+
+    Route::post(
+        '/',
+        [LogementController::class, 'store']
+    );
 
     Route::middleware('logement.owner')->group(function () {
-        Route::put('/{logement}', [LogementController::class, 'update']);
-        Route::delete('/{logement}', [LogementController::class, 'destroy']);
 
-        Route::post('/{logement}/photos', [PhotoController::class, 'store']);
-        Route::delete('/{logement}/photos/{photo}', [PhotoController::class, 'destroy']);
-        Route::patch('/{logement}/photos/{photo}/principale', [PhotoController::class, 'setPrincipale']);
+        Route::put(
+            '/{logement}',
+            [LogementController::class, 'update']
+        );
 
-        Route::put('/{logement}/equipements', [EquipementController::class, 'sync']);
+        Route::delete(
+            '/{logement}',
+            [LogementController::class, 'destroy']
+        );
+
+        Route::post(
+            '/{logement}/photos',
+            [PhotoController::class, 'store']
+        );
+
+        Route::delete(
+            '/{logement}/photos/{photo}',
+            [PhotoController::class, 'destroy']
+        );
+
+        Route::patch(
+            '/{logement}/photos/{photo}/principale',
+            [PhotoController::class, 'setPrincipale']
+        );
+
+        Route::put(
+            '/{logement}/equipements',
+            [EquipementController::class, 'sync']
+        );
     });
 });
 
-// --- Route détail (après les routes statiques) ---
-Route::get('/{logement}', [LogementController::class, 'show']);
+
+// --- Route détail ---
+// Cette route reste après les routes statiques
+// pour éviter que /types, /quartiers, etc.
+// soient interprétés comme un identifiant de logement.
+
+Route::get(
+    '/{logement}',
+    [LogementController::class, 'show']
+);

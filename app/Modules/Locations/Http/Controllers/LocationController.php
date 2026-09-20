@@ -6,8 +6,10 @@ use App\Modules\Locations\Http\Requests\StoreLocationRequest;
 use App\Modules\Locations\Models\Contrat;
 use App\Modules\Locations\Models\Location;
 use App\Modules\Demandes\Models\DemandeLocation;
-use App\Modules\Logements\Models\Logement;
+use App\Modules\Finances\Models\Facture;
+use App\Modules\Notifications\Models\Notification;
 use App\Shared\Enums\DemandeStatus;
+use App\Shared\Enums\FactureStatus;
 use App\Shared\Enums\LocationStatus;
 use App\Shared\Enums\LogementStatus;
 use App\Shared\Traits\ApiResponseTrait;
@@ -15,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class LocationController
 {
@@ -87,7 +90,7 @@ class LocationController
 
             $demande->logement->update(['statut' => LogementStatus::LOUE]);
 
-            Contrat::create([
+            $contrat = Contrat::create([
                 'location_id'     => $location->id,
                 'date_signature'  => now()->toDateString(),
                 'date_debut'      => $request->date_debut,
@@ -96,11 +99,75 @@ class LocationController
                 'conditions'      => $request->conditions,
             ]);
 
+            // Générer la première facture pour le premier mois de location
+            $facture = $this->createFirstFacture($location, $contrat, $request->date_debut);
+
+            Notification::create([
+                'user_id' => $location->locataire_id,
+                'titre'   => 'Votre contrat de location est disponible',
+                'contenu' => "Votre location du logement «{$demande->logement->titre}» démarre le "
+                    . $location->date_debut->format('d/m/Y')
+                    . ". La facture {$facture->numero_facture} est à régler avant le "
+                    . $facture->date_echeance->format('d/m/Y') . '.',
+                'type'    => 'contrat_cree',
+                'lu'      => false,
+            ]);
+
             return $location;
         });
 
         $location->load(['logement.quartier', 'contrat']);
 
         return $this->successResponse($location, 'Contrat de location créé avec succès', 201);
+    }
+
+    /**
+     * Crée la première facture pour le premier mois de location.
+     *
+     * @param Location $location
+     * @param Contrat $contrat
+     * @param string $dateDebut
+     * @return Facture
+     */
+    private function createFirstFacture(Location $location, Contrat $contrat, string $dateDebut): Facture
+    {
+        $dateDebut = Carbon::parse($dateDebut);
+
+        // Générer le numéro de facture : FAC-YYYY-NNNN
+        $year = now()->year;
+        $prefix = "FAC-{$year}-";
+
+        $maxSequence = Facture::where('numero_facture', 'like', "{$prefix}%")
+            ->lockForUpdate()
+            ->max(DB::raw("CAST(SUBSTRING(numero_facture, " . (strlen($prefix) + 1) . ") AS UNSIGNED)"));
+
+        $sequence = ($maxSequence ?? 0) + 1;
+        $numeroFacture = sprintf('FAC-%s-%04d', $year, $sequence);
+
+        // Période : mois de la date de début (ex : « Octobre 2026 »)
+        $periode = $dateDebut->translatedFormat('F Y');
+
+        $dateEmission = now()->toDateString();
+
+        // Échéance : 10 jours après la date de début, ou le 5 du mois suivant
+        // si cette date est plus tardive.
+        $dateEcheance = $dateDebut->copy()->addDays(10);
+        $cinqDuMoisSuivant = $dateDebut->copy()->addMonth()->day(5);
+
+        if ($cinqDuMoisSuivant->gt($dateEcheance)) {
+            $dateEcheance = $cinqDuMoisSuivant;
+        }
+
+        $montant = $contrat->montant_loyer;
+
+        return Facture::create([
+            'location_id'   => $location->id,
+            'numero_facture' => $numeroFacture,
+            'date_emission' => $dateEmission,
+            'date_echeance' => $dateEcheance->toDateString(),
+            'montant'       => $montant,
+            'periode'       => $periode,
+            'statut'        => FactureStatus::IMPAYEE,
+        ]);
     }
 }

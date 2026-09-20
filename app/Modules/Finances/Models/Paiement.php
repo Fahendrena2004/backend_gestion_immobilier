@@ -4,6 +4,7 @@ namespace App\Modules\Finances\Models;
 
 use App\Models\User;
 use App\Shared\Enums\PaymentStatus;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,12 @@ class Paiement extends Model
     use HasFactory;
 
     protected $table = 'paiements';
+
+    /**
+     * URL publique de la preuve de paiement, indispensable à l'administrateur
+     * pour vérifier un paiement déclaré.
+     */
+    protected $appends = ['preuve_url'];
 
     protected $fillable = [
         'facture_id',
@@ -35,6 +42,13 @@ class Paiement extends Model
             'montant' => 'decimal:2',
             'statut' => PaymentStatus::class,
         ];
+    }
+
+    protected function preuveUrl(): Attribute
+    {
+        return Attribute::get(
+            fn () => $this->preuve ? url('storage/' . $this->preuve) : null
+        );
     }
 
     public function facture(): BelongsTo

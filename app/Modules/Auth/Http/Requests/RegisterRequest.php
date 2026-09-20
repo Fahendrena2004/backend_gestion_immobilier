@@ -4,7 +4,7 @@ namespace App\Modules\Auth\Http\Requests;
 
 use App\Shared\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
@@ -24,14 +24,19 @@ class RegisterRequest extends FormRequest
             'cin'        => ['required', 'string', 'max:20', 'unique:users,cin'],
             'profession' => ['nullable', 'string', 'max:100'],
             'adresse'    => ['nullable', 'string', 'max:200'],
-            'role'       => ['required', new Enum(UserRole::class)],
+            // L'inscription publique ne permet que les rôles locataire et
+            // propriétaire : un compte administrateur se crée en base (seeder).
+            'role'       => ['required', Rule::in([
+                UserRole::LOCATAIRE->value,
+                UserRole::PROPRIETAIRE->value,
+            ])],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'role.not_in' => 'Le rôle doit être locataire ou propriétaire.',
+            'role.in' => 'Le rôle doit être locataire ou propriétaire.',
         ];
     }
 }
