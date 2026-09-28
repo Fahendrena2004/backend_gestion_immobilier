@@ -4,7 +4,7 @@ require $basePath.'/vendor/autoload.php';
 $app = require_once $basePath.'/bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-$email = $argv[1] ?? 'admin2@test.com';
+$email = $argv[1] ?? 'admin2@tokofianar.mg';
 $name = $argv[2] ?? 'Admin2';
 $cin = $argv[3] ?? 'CIN-ADMIN2';
 

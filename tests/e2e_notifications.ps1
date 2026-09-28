@@ -39,9 +39,9 @@ Write-Host "Server started on :8907`n" -ForegroundColor Yellow
 
 # --- Logins ---
 Write-Host "[Logins]" -ForegroundColor Yellow
-$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@btech.test","password":"password"}' -ContentType "application/json").data.token
+$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@tokofianar.mg","password":"password"}' -ContentType "application/json").data.token
 Assert "Admin login" ($null -ne $adminToken) "null"
-$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"test@example.com","password":"password"}' -ContentType "application/json").data.token
+$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"fara.andria@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Loc1 login" ($null -ne $locToken) "null"
 
 # Verify existing notifications in DB

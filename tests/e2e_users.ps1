@@ -40,11 +40,11 @@ Write-Host "Server started on :8907`n" -ForegroundColor Yellow
 
 # --- Logins ---
 Write-Host "[Logins]" -ForegroundColor Yellow
-$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@btech.test","password":"password"}' -ContentType "application/json").data.token
+$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@tokofianar.mg","password":"password"}' -ContentType "application/json").data.token
 Assert "Admin login" ($null -ne $adminToken) "null"
-$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"test@example.com","password":"password"}' -ContentType "application/json").data.token
+$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"fara.andria@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Loc1 login" ($null -ne $locToken) "null"
-$propToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"prop@test.com","password":"password"}' -ContentType "application/json").data.token
+$propToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"solo.rabe@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Prop login" ($null -ne $propToken) "null"
 
 # --- Tests ---
@@ -86,7 +86,7 @@ try {
 # 5: GET /users/profile (locataire) — 200, données correctes
 $r5 = Invoke-RestMethod -Uri "$base/users/profile" -Method GET -Headers @{Authorization="Bearer $locToken"} -ContentType "application/json"
 Assert "5. GET /profile (locataire) -> 200" ($r5.success -eq $true) "success=$($r5.success)"
-Assert "5b. email matches" ($r5.data.email -eq "test@example.com") "email=$($r5.data.email)"
+Assert "5b. email matches" ($r5.data.email -eq "fara.andria@gmail.com") "email=$($r5.data.email)"
 Assert "5c. role is locataire" ($r5.data.role -eq "locataire") "role=$($r5.data.role)"
 
 # 14: Verify password is NOT in response
@@ -111,14 +111,14 @@ Assert "7b. role unchanged" ($r7.data.data.role -eq $originalRole) "role=$($r7.d
 # 8: PUT /users/profile (email) — silently ignored
 $r8 = Put-Json "/users/profile" '{"email":"hacker@test.com"}' $locToken
 Assert "8. email silently ignored -> 200" ($r8.ok -and $r8.data.success -eq $true) "status=$($r8.status)"
-Assert "8b. email unchanged" ($r8.data.data.email -eq "test@example.com") "email=$($r8.data.data.email)"
+Assert "8b. email unchanged" ($r8.data.data.email -eq "fara.andria@gmail.com") "email=$($r8.data.data.email)"
 
 # 9: PUT /users/profile (password) — silently ignored
 $r9 = Put-Json "/users/profile" '{"password":"newpassword123"}' $locToken
 Assert "9. password silently ignored -> 200" ($r9.ok -and $r9.data.success -eq $true) "status=$($r9.status)"
 # Verify old password still works
 try {
-    $loginAfterPw = Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"test@example.com","password":"password"}' -ContentType "application/json"
+    $loginAfterPw = Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"fara.andria@gmail.com","password":"password"}' -ContentType "application/json"
     Assert "9b. old password still works" ($null -ne $loginAfterPw.data.token) "null"
 } catch {
     Assert "9b. old password still works" $false "status=$([int]$_.Exception.Response.StatusCode)"

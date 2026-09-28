@@ -92,13 +92,13 @@ $pngBytes = [byte[]]@(0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0
 
 # --- Logins ---
 Write-Host "[Logins]" -ForegroundColor Yellow
-$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@btech.test","password":"password"}' -ContentType "application/json").data.token
+$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@tokofianar.mg","password":"password"}' -ContentType "application/json").data.token
 Assert "Admin login" ($null -ne $adminToken) "null"
-$propToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"prop@test.com","password":"password"}' -ContentType "application/json").data.token
+$propToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"solo.rabe@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Prop login" ($null -ne $propToken) "null"
-$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"test@example.com","password":"password"}' -ContentType "application/json").data.token
+$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"fara.andria@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Loc1 login" ($null -ne $locToken) "null"
-$loc2Token = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"loc2@test.com","password":"password"}' -ContentType "application/json").data.token
+$loc2Token = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"niry.ram@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Loc2 login" ($null -ne $loc2Token) "null"
 
 # --- Setup ---
