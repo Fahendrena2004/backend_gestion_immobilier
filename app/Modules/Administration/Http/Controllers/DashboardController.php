@@ -108,7 +108,7 @@ class DashboardController
             $mois = now()->startOfMonth()->subMonths($i);
 
             $serie[] = [
-                'mois'   => $mois->translatedFormat('M'),
+                'mois'   => $mois->copy()->locale('fr')->translatedFormat('M'),
                 'periode' => $mois->format('Y-m'),
                 'valeur' => $valeurPourMois($mois->format('Y-m')),
             ];

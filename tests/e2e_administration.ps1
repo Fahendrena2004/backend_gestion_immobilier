@@ -54,16 +54,16 @@ Write-Host "Server started on :8907`n" -ForegroundColor Yellow
 
 # --- Logins ---
 Write-Host "[Logins]" -ForegroundColor Yellow
-$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@btech.test","password":"password"}' -ContentType "application/json").data.token
+$adminToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"admin@tokofianar.mg","password":"password"}' -ContentType "application/json").data.token
 Assert "Admin login" ($null -ne $adminToken) "null"
-$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"test@example.com","password":"password"}' -ContentType "application/json").data.token
+$locToken = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"fara.andria@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Loc1 login" ($null -ne $locToken) "null"
-$loc2Token = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"loc2@test.com","password":"password"}' -ContentType "application/json").data.token
+$loc2Token = (Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Body '{"email":"niry.ram@gmail.com","password":"password"}' -ContentType "application/json").data.token
 Assert "Loc2 login" ($null -ne $loc2Token) "null"
 
 # Create second admin for guard test (via PHP script to avoid artisan tinker issues)
 $ts = Get-Date -Format 'yyyyMMddHHmmss'
-$admin2Email = "admin2-$ts@test.com"
+$admin2Email = "admin2-$ts@tokofianar.mg"
 $admin2Name = "Admin2-$ts"
 $admin2Cin = "CIN-ADMIN2-$ts"
 & "C:\php84\php.exe" -c "C:\php84\php.ini" "E:\STAGE B-TECH\backend_gestion_immobilier\tests\create_user.php" $admin2Email $admin2Name $admin2Cin 2>&1 > $null
