@@ -127,6 +127,7 @@ class VisiteController
                 'user_id' => $visite->locataire_id,
                 'titre'   => 'Une date de visite a été proposée',
                 'contenu' => "Une date de visite pour le logement «{$visite->logement->titre}» vous a été proposée.",
+                'type'    => 'visite_proposee',
                 'lu'      => false,
             ]);
         }
@@ -136,6 +137,7 @@ class VisiteController
                 'user_id' => $visite->logement->proprietaire_id,
                 'titre'   => 'Visite confirmée',
                 'contenu' => "Le locataire a confirmé la visite pour le logement «{$visite->logement->titre}».",
+                'type'    => 'visite_confirmee',
                 'lu'      => false,
             ]);
         }

@@ -107,7 +107,16 @@ class PaiementController
                     'date_validation'      => now(),
                 ]);
 
-                $paiement->facture->update(['statut' => FactureStatus::PAYEE]);
+                // La facture n'est payée que si le cumul des paiements validés
+                // (celui-ci inclus) couvre au moins son montant exigible.
+                // Un paiement partiel laisse la facture dans son statut courant
+                // afin de permettre des versements complémentaires.
+                $facture = $paiement->facture()->lockForUpdate()->firstOrFail();
+                $paiement->setRelation('facture', $facture);
+
+                if ($facture->estEntierementSoldee()) {
+                    $facture->update(['statut' => FactureStatus::PAYEE]);
+                }
 
                 $numero = $this->genererNumeroQuittance();
 
