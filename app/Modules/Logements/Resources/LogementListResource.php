@@ -42,7 +42,7 @@ class LogementListResource extends JsonResource
                 'libelle' => $eq->libelle,
             ]), []),
             'photo_principale' => $photoPrincipale
-                ? url('storage/' . $photoPrincipale->chemin)
+                ? url('storage/' . $photoPrincipale->cheminMiniature())
                 : null,
             'nombre_photos' => $this->photos->count(),
         ];

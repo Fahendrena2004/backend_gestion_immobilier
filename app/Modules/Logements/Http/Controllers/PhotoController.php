@@ -28,7 +28,7 @@ class PhotoController
             'est_principale' => ['sometimes', 'boolean'],
         ]);
 
-        $path = $this->fileUploadService->upload($request->file('photo'), 'logements');
+        $path = $this->fileUploadService->uploadImage($request->file('photo'), 'logements');
 
         $estPrincipale = $request->boolean('est_principale', false);
 
@@ -58,7 +58,7 @@ class PhotoController
             return $this->errorResponse('Cette photo n\'appartient pas à ce logement', 404);
         }
 
-        $this->fileUploadService->delete($photo->chemin);
+        $this->fileUploadService->deleteImage($photo->chemin);
         $photo->delete();
 
         return $this->successResponse(null, 'Photo supprimée avec succès');
