@@ -12,7 +12,14 @@ class Quartier extends Model
 
     protected $table = 'quartiers';
 
-    protected $fillable = ['nom', 'ville'];
+    protected $fillable = ['nom', 'ville', 'est_valide'];
+
+    protected function casts(): array
+    {
+        return [
+            'est_valide' => 'boolean',
+        ];
+    }
 
     public function logements(): HasMany
     {

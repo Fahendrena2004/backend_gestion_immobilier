@@ -100,9 +100,21 @@ class LogementController
     /**
      * Liste des quartiers.
      */
-    public function quartiers(): JsonResponse
+    public function quartiers(Request $request): JsonResponse
     {
-        $quartiers = Quartier::orderBy('nom')->get();
+        $user = $request->user('sanctum');
+
+        $quartiers = Quartier::where(function ($query) use ($user) {
+            $query->where('est_valide', true);
+            if ($user) {
+                $query->orWhere(function ($sub) use ($user) {
+                    $sub->where('est_valide', false)
+                        ->whereHas('logements', fn ($q) => $q->where('proprietaire_id', $user->id));
+                });
+            }
+        })
+            ->orderBy('nom')
+            ->get();
 
         return $this->successResponse($quartiers);
     }
@@ -110,9 +122,21 @@ class LogementController
     /**
      * Liste des types de logements.
      */
-    public function types(): JsonResponse
+    public function types(Request $request): JsonResponse
     {
-        $typesLogement = TypeLogement::orderBy('libelle')->get();
+        $user = $request->user('sanctum');
+
+        $typesLogement = TypeLogement::where(function ($query) use ($user) {
+            $query->where('est_valide', true);
+            if ($user) {
+                $query->orWhere(function ($sub) use ($user) {
+                    $sub->where('est_valide', false)
+                        ->whereHas('logements', fn ($q) => $q->where('proprietaire_id', $user->id));
+                });
+            }
+        })
+            ->orderBy('libelle')
+            ->get();
 
         return $this->successResponse($typesLogement);
     }
@@ -155,6 +179,23 @@ class LogementController
     public function store(StoreLogementRequest $request): JsonResponse
     {
         $validated = $request->validated();
+
+        $validated['quartier_id'] = $this->resoudreReferenceId(
+            Quartier::class,
+            'nom',
+            $validated['quartier_id'] ?? null,
+            $validated['quartier_autre'] ?? null,
+            ['ville' => 'Fianarantsoa']
+        );
+
+        $validated['type_logement_id'] = $this->resoudreReferenceId(
+            TypeLogement::class,
+            'libelle',
+            $validated['type_logement_id'] ?? null,
+            $validated['type_autre'] ?? null
+        );
+
+        unset($validated['quartier_autre'], $validated['type_autre']);
 
         $equipements = $validated['equipements'] ?? [];
 
@@ -199,6 +240,27 @@ class LogementController
 
         $validated = $request->validated();
 
+        if (array_key_exists('quartier_id', $validated) || array_key_exists('quartier_autre', $validated)) {
+            $validated['quartier_id'] = $this->resoudreReferenceId(
+                Quartier::class,
+                'nom',
+                $validated['quartier_id'] ?? $logement->quartier_id,
+                $validated['quartier_autre'] ?? null,
+                ['ville' => 'Fianarantsoa']
+            );
+        }
+
+        if (array_key_exists('type_logement_id', $validated) || array_key_exists('type_autre', $validated)) {
+            $validated['type_logement_id'] = $this->resoudreReferenceId(
+                TypeLogement::class,
+                'libelle',
+                $validated['type_logement_id'] ?? $logement->type_logement_id,
+                $validated['type_autre'] ?? null
+            );
+        }
+
+        unset($validated['quartier_autre'], $validated['type_autre']);
+
         $equipements = $validated['equipements'] ?? null;
 
         unset($validated['equipements']);
@@ -220,6 +282,41 @@ class LogementController
             new LogementResource($logement),
             'Logement mis à jour avec succès'
         );
+    }
+
+    /**
+     * Résout l'identifiant d'un référentiel (Quartier ou TypeLogement).
+     * Si le texte « autre » est fourni, le nettoie (trim + espaces multiples réduits à un seul),
+     * cherche une ligne existante avec le même nom en ignorant la casse (LOWER) et la réutilise ;
+     * sinon crée la ligne avec est_valide = false.
+     * Si pas de texte « autre », retourne l'id reçu.
+     */
+    private function resoudreReferenceId(
+        string $modelClass,
+        string $colonne,
+        mixed $id,
+        ?string $autre,
+        array $attributsDefaut = []
+    ): ?int {
+        if ($autre !== null && trim($autre) !== '') {
+            $texteNettoye = preg_replace('/\s+/', ' ', trim($autre));
+
+            $existant = $modelClass::whereRaw("LOWER({$colonne}) = ?", [mb_strtolower($texteNettoye)])->first();
+
+            if ($existant) {
+                return $existant->id;
+            }
+
+            $nouvelleEntree = $modelClass::create([
+                $colonne => $texteNettoye,
+                'est_valide' => false,
+                ...$attributsDefaut,
+            ]);
+
+            return $nouvelleEntree->id;
+        }
+
+        return $id ? (int) $id : null;
     }
 
     /**

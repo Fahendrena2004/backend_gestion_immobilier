@@ -12,7 +12,14 @@ class TypeLogement extends Model
 
     protected $table = 'types_logement';
 
-    protected $fillable = ['libelle'];
+    protected $fillable = ['libelle', 'est_valide'];
+
+    protected function casts(): array
+    {
+        return [
+            'est_valide' => 'boolean',
+        ];
+    }
 
     public function logements(): HasMany
     {
