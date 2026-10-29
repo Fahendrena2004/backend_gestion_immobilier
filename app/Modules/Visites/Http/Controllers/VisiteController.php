@@ -49,7 +49,7 @@ class VisiteController
             return Visite::whereHas('logement', function ($query) use ($user) {
                 $query->where('proprietaire_id', $user->id);
             })
-                ->with('logement')
+                ->with(['logement', 'locataire:id,name'])
                 ->orderByDesc('created_at')
                 ->paginate(15);
         }
@@ -75,7 +75,7 @@ class VisiteController
             'statut'       => VisiteStatus::DEMANDEE,
         ]);
 
-        $visite->load('logement');
+        $visite->load(['logement', 'locataire:id,name']);
 
         return $this->successResponse($visite, 'Visite planifiée avec succès', 201);
     }
@@ -147,7 +147,7 @@ class VisiteController
         }
 
         $visite->update($data);
-        $visite->load('logement');
+        $visite->load(['logement', 'locataire:id,name']);
 
         return $this->successResponse($visite, 'Statut mis à jour avec succès');
     }
